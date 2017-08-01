@@ -1,0 +1,234 @@
+package treemap;
+
+
+
+// BinarySearchTree class
+//
+// CONSTRUCTION: with no initializer
+//
+// ******************PUBLIC OPERATIONS*********************
+// void insert( x )       --> Insert x
+// void remove( x )       --> Remove x
+// void removeMin( )      --> Remove minimum item
+// Comparable find( x )   --> Return item that matches x
+// Comparable findMin( )  --> Return smallest item
+// Comparable findMax( )  --> Return largest item
+// boolean isEmpty( )     --> Return true if empty; else false
+// void makeEmpty( )      --> Remove all items
+// ******************ERRORS********************************
+// Exceptions are thrown by insert, remove, and removeMin if warranted
+
+/**
+ * Implements an unbalanced binary search tree.
+ * Note that all "matching" is based on the compareTo method.
+ * @author Mark Allen Weiss
+ */
+public class BinarySearchTree<AnyType extends Comparable<? super AnyType>, 
+								AnyValue extends Comparable<? super AnyValue>> 
+								implements MyTreeMap<AnyType, AnyValue>
+{
+    
+    /** The tree root. */
+    protected BinaryNode<AnyType, AnyValue> root;
+    
+    /**
+     * Construct the tree.
+     */
+    public BinarySearchTree( )
+    {
+        root = null;
+    }
+
+    /**
+     * Insert into the tree.
+     * @param x the item to insert.
+     * @throws DuplicateItemException if x is already present.
+     */
+    public void put( AnyType x, AnyValue y )
+    {
+        root = insert( x, y, root );
+    }
+
+    /**
+     * Remove from the tree..
+     * @param x the item to remove.
+     * @throws ItemNotFoundException if x is not found.
+     */
+    public void remove( AnyType x )
+    {
+        root = remove( x, root );
+    }
+
+    /**
+     * Find an item in the tree.
+     * @param x the item to search for.
+     * @return the matching item or null if not found.
+     */
+    public AnyValue get( AnyType x )
+    {
+        return elementAt( find( x, root ) );
+    }
+
+
+    /**
+     * Internal method to get element field.
+     * @param t the node.
+     * @return the element field or null if t is null.
+     */
+    private AnyValue elementAt( BinaryNode<AnyType, AnyValue> t )
+    {
+        return t == null ? null : (AnyValue)t.value;
+    }
+
+    /**
+     * Internal method to insert into a subtree.
+     * @param x the item to insert.
+     * @param t the node that roots the tree.
+     * @return the new root.
+     * @throws IllegalArgumentException if x is already present.
+     */
+    protected BinaryNode<AnyType, AnyValue> insert( AnyType x, AnyValue y, BinaryNode<AnyType, AnyValue> t )
+    {
+        if( t == null )
+            t = new BinaryNode<AnyType, AnyValue>( x , y );
+        else if( x.compareTo( t.element ) < 0 )
+            t.left = insert( x, y, t.left );
+        else if( x.compareTo( t.element ) > 0 )
+            t.right = insert( x, y, t.right );
+        else 
+            find(x, root).value = y;  // Duplicate
+        return t;
+    }
+
+    /**
+     * Internal method to remove from a subtree.
+     * @param x the item to remove.
+     * @param t the node that roots the tree.
+     * @return the new root.
+     * @throws IllegalArgumentException if x is not found.
+     */
+    protected BinaryNode<AnyType, AnyValue> remove( AnyType x, BinaryNode<AnyType, AnyValue> t )
+    {
+        if( t == null )
+            throw new IllegalArgumentException( x.toString( ) );
+        if( x.compareTo( t.element ) < 0 )
+            t.left = remove( x, t.left );
+        else if( x.compareTo( t.element ) > 0 )
+            t.right = remove( x, t.right );
+        else if( t.left != null && t.right != null ) // Two children
+        {
+            t.element = findMin( t.right ).element;
+            t.value = findMin( t.right ).value;
+            t.right = removeMin( t.right );
+        }
+        else
+            t = ( t.left != null ) ? t.left : t.right;
+        return t;
+    }
+
+    /**
+     * Internal method to remove minimum item from a subtree.
+     * @param t the node that roots the tree.
+     * @return the new root.
+     * @throws IllegalArgumentException if t is empty.
+     */
+    protected BinaryNode<AnyType, AnyValue> removeMin( BinaryNode<AnyType, AnyValue> t )
+    {
+        if( t == null )
+            throw new IllegalArgumentException( );
+        else if( t.left != null )
+        {
+            t.left = removeMin( t.left );
+            return t;
+        }
+        else
+            return t.right;
+    }    
+
+    /**
+     * Internal method to find the smallest item in a subtree.
+     * @param t the node that roots the tree.
+     * @return node containing the smallest item.
+     */
+    protected BinaryNode<AnyType, AnyValue> findMin( BinaryNode<AnyType, AnyValue> t )
+    {
+    	if(t.left.left == null) {
+    		return t;
+    	} else {
+    		return findMin(t);
+    	}
+//        if( t != null )
+//            while( t.left != null )
+//                t = t.left;
+//
+//        return t;
+    }
+
+    /**
+     * Internal method to find an item in a subtree.
+     * @param x is item to search for.
+     * @param t the node that roots the tree.
+     * @return node containing the matched item.
+     */
+    private BinaryNode<AnyType, AnyValue> find( AnyType x, BinaryNode<AnyType, AnyValue> t )
+    {
+    	if( t == null ) {
+    		return null;
+    	}
+        int compareResult = x.compareTo( t.element );
+        
+        if( compareResult < 0 )
+            return find(x, t.left);
+        else if( compareResult > 0 )
+            return find(x, t.right);
+        else
+            return t;    
+    }
+
+    /**
+     * Returns a string form of the tree with inorder iteration.
+     */
+    public String toString() {
+    	StringBuilder list = new StringBuilder("");
+    	list.append("{");
+    	inOrder(list, root);
+    	list.append("}");
+    	return list.toString();
+    }
+    
+   /**
+    * Recursively iterates through the tree and creates a string of its content.
+    * @param root the root
+    * @param theString the string that is returned
+    */
+    private StringBuilder inOrder(StringBuilder theString, BinaryNode<AnyType, AnyValue> root) {  
+    	if(root.left !=  null)  
+    		inOrder(theString, root.left);  
+    	theString.append(root.element + "=" + root.value + ", ");
+    	if(root.right!= null)  
+    		inOrder(theString, root.right);  
+    	return theString;
+	}  
+
+ // Basic node stored in unbalanced binary search trees
+ // Note that this class is not accessible outside
+ // of this package.
+
+    public static class BinaryNode<AnyType, AnyValue>
+    {
+         // Constructor
+        BinaryNode( AnyType theElement , AnyValue theValue)
+        {
+         element = theElement;
+         value = theValue;
+         left = right = null;
+        }
+
+       // Data; accessible by other package routines
+        AnyType             element;  // The data in the node
+        AnyValue				value;	// The number of occurences
+        BinaryNode<AnyType, AnyValue> left;     // Left child
+        BinaryNode<AnyType, AnyValue> right;    // Right child
+    }
+ }
+

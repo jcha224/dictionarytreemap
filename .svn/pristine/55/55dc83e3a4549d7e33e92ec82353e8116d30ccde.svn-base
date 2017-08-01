@@ -1,0 +1,298 @@
+package treemap;
+
+
+// AvlTree class
+//
+// CONSTRUCTION: with no initializer
+//
+// ******************PUBLIC OPERATIONS*********************
+// void insert( x )       --> Insert x
+// void remove( x )       --> Remove x (unimplemented)
+// boolean contains( x )  --> Return true if x is present
+// boolean remove( x )    --> Return true if x was present
+// Comparable findMin( )  --> Return smallest item
+// Comparable findMax( )  --> Return largest item
+// boolean isEmpty( )     --> Return true if empty; else false
+// void makeEmpty( )      --> Remove all items
+// void printTree( )      --> Print tree in sorted order
+// ******************ERRORS********************************
+// Throws UnderflowException as appropriate
+
+/**
+ * Implements an AVL tree.
+ * Note that all "matching" is based on the compareTo method.
+ * @author Mark Allen Weiss
+ */
+public class AvlTree<AnyType extends Comparable<? super AnyType>,
+					AnyValue extends Comparable<? super AnyValue>>
+					implements MyTreeMap<AnyType, AnyValue>
+{
+    
+    /** The tree root. */
+    private AvlNode<AnyType, AnyValue> root;
+    
+    /**
+     * Construct the tree.
+     */
+    public AvlTree( )
+    {
+        root = null;
+    }
+    
+    /**
+     * Returns a value associated with a key.
+     */
+    public AnyValue get(AnyType x) {
+    	return elementAt( find(x, root));
+    }
+
+    /**
+     * Internal method to get element field.
+     */
+    private AnyValue elementAt(AvlNode<AnyType, AnyValue> t ) {
+    		return t == null ? null : (AnyValue)t.value;
+    }
+    
+    /**
+     * Internal method to find item in tree.
+     */
+    private AvlNode<AnyType, AnyValue> find(AnyType x, AvlNode<AnyType, AnyValue> t) {
+    	if( t == null ) {
+    		return null;
+    	}
+        int compareResult = x.compareTo( t.element );
+        
+        if( compareResult < 0 )
+            return find(x, t.left);
+        else if( compareResult > 0 )
+            return find(x, t.right);
+        else
+            return t;    // Match
+        
+    }
+    
+    /**
+     * Insert into the tree; duplicates are ignored.
+     * @param x the item to insert.
+     */
+    public void put( AnyType x, AnyValue y)
+    {
+        root = insert( x, y, root );
+    }
+
+    /**
+     * Remove from the tree. Nothing is done if x is not found.
+     * @param x the item to remove.
+     */
+    public void remove( AnyType x )
+    {
+        root = remove( x, root );
+    }
+
+    /**
+     * Returns a string form of the tree with inorder iteration.
+     */
+    public String toString() {
+    	StringBuilder list = new StringBuilder("");
+    	list.append("{");
+    	inOrder(list, root);
+    	list.append("}\n");
+    	return list.toString();
+    }
+    
+   /**
+    * Recursively iterates through the tree and creates a string of its content.
+    * @param root the root
+    * @param theString the string that is returned
+    */
+    private StringBuilder inOrder(StringBuilder theString, AvlNode<AnyType, AnyValue> root) {  
+    	if(root.left !=  null)  
+    		inOrder(theString, root.left);  
+    	theString.append(root.element + "=" + root.value + ", ");
+    	if(root.right!= null)  
+    		inOrder(theString, root.right);  
+    	return theString;
+	}  
+       
+    /**
+     * Internal method to remove from a subtree.
+     * @param x the item to remove.
+     * @param t the node that roots the subtree.
+     * @return the new root of the subtree.
+     */
+    private AvlNode<AnyType, AnyValue> remove( AnyType x, AvlNode<AnyType, AnyValue> t )
+    {
+        if( t == null )
+            return t;   // Item not found; do nothing
+            
+        int compareResult = x.compareTo( t.element );
+            
+        if( compareResult < 0 )
+            t.left = remove( x, t.left );
+        else if( compareResult > 0 )
+            t.right = remove( x, t.right );
+        else if( t.left != null && t.right != null ) // Two children
+        {
+            t.element = findMin( t.right ).element;
+            t.value = findMin( t.right ).value;
+            t.right = remove( t.element, t.right );
+        }
+        else
+            t = ( t.left != null ) ? t.left : t.right;
+        return balance( t );
+    }
+    
+    /**
+     * Find the smallest item in the tree.
+     * @return smallest item or null if empty.
+     */
+    protected AnyType findMin( )
+    {
+        if( root == null )
+            throw new IllegalStateException( );
+        return findMin( root ).element;
+    }
+
+    private static final int ALLOWED_IMBALANCE = 1;
+    
+    // Assume t is either balanced or within one of being balanced
+    private AvlNode<AnyType, AnyValue> balance( AvlNode<AnyType, AnyValue> t )
+    {
+        if( t == null )
+            return t;
+        
+        if( height( t.left ) - height( t.right ) > ALLOWED_IMBALANCE )
+            if( height( t.left.left ) >= height( t.left.right ) )
+                t = rotateWithLeftChild( t );
+            else
+                t = doubleWithLeftChild( t );
+        else
+        if( height( t.right ) - height( t.left ) > ALLOWED_IMBALANCE )
+            if( height( t.right.right ) >= height( t.right.left ) )
+                t = rotateWithRightChild( t );
+            else
+                t = doubleWithRightChild( t );
+
+        t.height = Math.max( height( t.left ), height( t.right ) ) + 1;
+        return t;
+    }
+    
+    /**
+     * Internal method to insert into a subtree.
+     * @param x the item to insert.
+     * @param t the node that roots the subtree.
+     * @return the new root of the subtree.
+     */
+    private AvlNode<AnyType, AnyValue> insert( AnyType x, AnyValue y, AvlNode<AnyType, AnyValue> t )
+    {
+        if( t == null )
+            return new AvlNode<>( x, y, null, null );
+        
+        int compareResult = x.compareTo( t.element );
+        
+        if( compareResult < 0 )
+            t.left = insert( x, y, t.left );
+        else if( compareResult > 0 )
+            t.right = insert( x, y, t.right );
+        else
+        	find(x, root).value = y;  // Duplicate; do nothing
+        return balance( t );
+    }
+
+    /**
+     * Internal method to find the smallest item in a subtree.
+     * @param t the node that roots the tree.
+     * @return node containing the smallest item.
+     */
+    private AvlNode<AnyType, AnyValue> findMin( AvlNode<AnyType, AnyValue> t )
+    {
+        if( t == null )
+            return t;
+
+        while( t.left != null )
+            t = t.left;
+        return t;
+    }
+
+    /**
+     * Return the height of node t, or -1, if null.
+     */
+    private int height( AvlNode<AnyType, AnyValue> t )
+    {
+        return t == null ? -1 : t.height;
+    }
+
+    /**
+     * Rotate binary tree node with left child.
+     * For AVL trees, this is a single rotation for case 1.
+     * Update heights, then return new root.
+     */
+    private AvlNode<AnyType, AnyValue> rotateWithLeftChild( AvlNode<AnyType, AnyValue> k2 )
+    {
+        AvlNode<AnyType, AnyValue> k1 = k2.left;
+        k2.left = k1.right;
+        k1.right = k2;
+        k2.height = Math.max( height( k2.left ), height( k2.right ) ) + 1;
+        k1.height = Math.max( height( k1.left ), k2.height ) + 1;
+        return k1;
+    }
+
+    /**
+     * Rotate binary tree node with right child.
+     * For AVL trees, this is a single rotation for case 4.
+     * Update heights, then return new root.
+     */
+    private AvlNode<AnyType, AnyValue> rotateWithRightChild( AvlNode<AnyType, AnyValue> k1 )
+    {
+        AvlNode<AnyType, AnyValue> k2 = k1.right;
+        k1.right = k2.left;
+        k2.left = k1;
+        k1.height = Math.max( height( k1.left ), height( k1.right ) ) + 1;
+        k2.height = Math.max( height( k2.right ), k1.height ) + 1;
+        return k2;
+    }
+
+    /**
+     * Double rotate binary tree node: first left child
+     * with its right child; then node k3 with new left child.
+     * For AVL trees, this is a double rotation for case 2.
+     * Update heights, then return new root.
+     */
+    private AvlNode<AnyType, AnyValue> doubleWithLeftChild( AvlNode<AnyType, AnyValue> k3 )
+    {
+        k3.left = rotateWithRightChild( k3.left );
+        return rotateWithLeftChild( k3 );
+    }
+
+    /**
+     * Double rotate binary tree node: first right child
+     * with its left child; then node k1 with new right child.
+     * For AVL trees, this is a double rotation for case 3.
+     * Update heights, then return new root.
+     */
+    private AvlNode<AnyType, AnyValue> doubleWithRightChild( AvlNode<AnyType, AnyValue> k1 )
+    {
+        k1.right = rotateWithLeftChild( k1.right );
+        return rotateWithRightChild( k1 );
+    }
+
+    private static class AvlNode<AnyType, AnyValue>
+    {
+
+        AvlNode( AnyType theElement, AnyValue theValue, AvlNode<AnyType, AnyValue> lt, AvlNode<AnyType, AnyValue> rt )
+        {
+            element  = theElement;
+            value 	 = theValue;
+            left     = lt;
+            right    = rt;
+            height   = 0;
+        }
+
+        AnyType           element;	// The data in the node
+        AnyValue		value;
+        AvlNode<AnyType, AnyValue>  left;         // Left child
+        AvlNode<AnyType, AnyValue>  right;        // Right child
+        int               height;       // Height
+    }
+
+}
